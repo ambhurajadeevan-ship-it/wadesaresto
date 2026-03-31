@@ -966,7 +966,6 @@ function loadData() {
             allData = res.data;
             const s = res.stats;
             document.getElementById('statTotal').innerText     = s.total;
-            document.getElementById('statPending').innerText   = s.pending;
             document.getElementById('statConfirmed').innerText = s.confirmed;
             document.getElementById('statCancelled').innerText = s.cancelled;
             applyFilters();
