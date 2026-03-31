@@ -20,7 +20,9 @@
     </p>
 
     <p><b>Jam:</b>
-    {{ \Carbon\Carbon::parse($reservasi->jam_reservasi)->format('H.i') }}
+    {{ \Carbon\Carbon::parse($reservasi->jam_reservasi)->format('H:i') }}
+    -
+    {{ $reservasi->jam_selesai ? \Carbon\Carbon::parse($reservasi->jam_selesai)->format('H:i') : '-' }}
     </p>
 
     <p><b>Jumlah Orang:</b> {{ $reservasi->jumlah_orang }}</p>
@@ -31,9 +33,11 @@
     {{ $reservasi->area->nama_area ?? '-' }}
     </p>
 
+    @if($reservasi->meja)
     <p><b>Meja:</b>
-    {{ $reservasi->meja->kode_meja ?? '-' }}
+    {{ $reservasi->meja->kode_meja }}
     </p>
+    @endif
 
     @if($reservasi->catatan)
     <p><b>Catatan:</b> {{ $reservasi->catatan }}</p>
@@ -41,26 +45,52 @@
 
     <hr>
 
-    <p>Status Pembayaran: <b style="color: {{ $reservasi->status_pembayaran == 'paid' ? '#28a745' : '#dc3545' }}">{{ $reservasi->status_pembayaran == 'paid' ? 'LUNAS' : 'PENDING' }}</b></p>
-    @if($reservasi->metode_pembayaran)
-    <p>Metode Pembayaran: <b>{{ $reservasi->metode_pembayaran }}</b></p>
-    @endif
+    <h3 style="color:#d4b16a;">Biaya Reservasi</h3>
+    <table style="width:100%; color:white; border-collapse: collapse;">
+        <tr>
+            <td style="padding: 5px 0;">Harga Area ({{ $reservasi->area->nama_area ?? '-' }})</td>
+            <td style="text-align:right;">Rp {{ number_format($reservasi->area->harga ?? 0, 0, ',', '.') }}</td>
+        </tr>
+        @if($reservasi->meja)
+        <tr>
+            <td style="padding: 5px 0;">Harga Meja ({{ $reservasi->meja->kode_meja }})</td>
+            <td style="text-align:right;">Rp {{ number_format($reservasi->meja->harga ?? 0, 0, ',', '.') }}</td>
+        </tr>
+        @endif
+        <tr style="border-top: 1px solid #444;">
+            <td style="padding: 10px 0; font-weight:bold;">Total Biaya Reservasi</td>
+            <td style="text-align:right; font-weight:bold; color:#d4b16a; font-size:18px;">
+                Rp {{ number_format($reservasi->total_harga, 0, ',', '.') }}
+            </td>
+        </tr>
+    </table>
 
+    @if($reservasi->menus->count() > 0)
     <hr>
 
-    <h3 style="color:#d4b16a;">Rincian Pesanan:</h3>
+    <h3 style="color:#d4b16a;">Pesanan Menu <span style="font-size:14px; color:#aaa;">(Bayar di Tempat)</span></h3>
     <table style="width:100%; color:white; border-collapse: collapse;">
         @foreach($reservasi->menus as $menu)
         <tr>
             <td style="padding: 5px 0;">{{ $menu->nama_menu }} (x{{ $menu->pivot->jumlah }})</td>
-            <td style="text-align:right;">Rp {{ number_format($menu->pivot->harga_saat_ini * $menu->pivot->jumlah, 0, ',', '.') }}</td>
+            <td style="text-align:right; color:#aaa;">Rp {{ number_format($menu->pivot->harga_saat_ini * $menu->pivot->jumlah, 0, ',', '.') }}</td>
         </tr>
         @endforeach
-        <tr style="border-top: 1px solid #444;">
-            <td style="padding: 10px 0; font-weight:bold;">Grand Total</td>
-            <td style="text-align:right; font-weight:bold; color:#d4b16a; font-size:18px;">Rp {{ number_format($reservasi->total_harga, 0, ',', '.') }}</td>
-        </tr>
     </table>
+    <p style="color:#aaa; font-size:13px; margin-top:10px;">
+        * Pesanan menu dibayar langsung di tempat saat kedatangan Anda.
+    </p>
+    @endif
+
+    <hr>
+
+    <p>Status Pembayaran Reservasi: <b style="color: {{ $reservasi->status_pembayaran == 'paid' ? '#28a745' : '#dc3545' }}">
+        {{ $reservasi->status_pembayaran == 'paid' ? 'LUNAS' : 'PENDING' }}
+    </b></p>
+
+    @if($reservasi->metode_pembayaran)
+    <p>Metode Pembayaran: <b>{{ $reservasi->metode_pembayaran }}</b></p>
+    @endif
 
     <hr>
 

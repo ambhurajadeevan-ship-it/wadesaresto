@@ -172,29 +172,42 @@
 <label>Pilih Meja</label>
 </div>
 
-{{-- MENU SELECTION (Integrated into Step 1) --}}
+{{-- RINGKASAN BIAYA RESERVASI --}}
+<div class="price-summary mt-3 p-3 bg-light rounded small">
+    <div class="fw-semibold mb-2 text-dark">Biaya Reservasi</div>
+    <div class="d-flex justify-content-between">
+        <span>Harga Area:</span>
+        <span id="summary-area-price">Rp 0</span>
+    </div>
+    <div class="d-flex justify-content-between" id="row-meja-price" style="display:none !important;">
+        <span>Harga Meja:</span>
+        <span id="summary-meja-price">Rp 0</span>
+    </div>
+    <hr class="my-2">
+    <div class="d-flex justify-content-between fw-bold">
+        <span>Total Biaya Reservasi:</span>
+        <span id="summary-total-price">Rp 0</span>
+    </div>
+</div>
+
+{{-- PILIHAN MENU (Opsional, tanpa biaya) --}}
 <div class="menu-section mt-4">
-    <h6 class="mb-3 fw-bold">Pilih Menu (Wajib)</h6>
+    <div class="d-flex align-items-center gap-2 mb-1">
+        <h6 class="mb-0 fw-bold">Pilih Menu</h6>
+        <span class="badge bg-secondary" style="font-size:11px;">Opsional</span>
+    </div>
+    <p class="text-muted small mb-2">Pilih menu yang ingin Anda pesan. Menu dibayar langsung di tempat.</p>
 
     <div class="menu-list border rounded p-2" style="max-height: 250px; overflow-y: auto;">
         @foreach($menus as $menu)
-        <div class="d-flex align-items-center justify-content-between p-2 border-bottom 
-        {{ !$menu->is_available ? 'opacity-50' : '' }}">
+        <div class="d-flex align-items-center justify-content-between p-2 border-bottom">
 
             <!-- INFO MENU -->
             <div class="small">
-                <div class="fw-bold">
-                    {{ $menu->nama_menu }}
-
-                    @if(!$menu->is_available)
-                        <span style="color:red; font-size:12px;">
-                            (Tidak tersedia)
-                        </span>
-                    @endif
-                </div>
-
+                <div class="fw-bold">{{ $menu->nama_menu }}</div>
                 <div class="text-muted">
                     Rp {{ number_format($menu->harga, 0, ',', '.') }}
+                    <span class="text-info">(bayar di tempat)</span>
                 </div>
             </div>
 
@@ -204,8 +217,7 @@
                 <!-- MINUS -->
                 <button type="button"
                     class="btn btn-sm btn-light btn-minus"
-                    data-id="{{ $menu->id_menu }}"
-                    {{ !$menu->is_available ? 'disabled' : '' }}>
+                    data-id="{{ $menu->id_menu }}">
                     -
                 </button>
 
@@ -214,7 +226,6 @@
                     class="form-control form-control-sm text-center menu-qty"
                     id="qty_{{ $menu->id_menu }}"
                     data-id="{{ $menu->id_menu }}"
-                    data-harga="{{ $menu->harga }}"
                     value="0"
                     readonly
                     style="width: 40px; border:none; background:transparent;">
@@ -222,30 +233,13 @@
                 <!-- PLUS -->
                 <button type="button"
                     class="btn btn-sm btn-light btn-plus"
-                    data-id="{{ $menu->id_menu }}"
-                    {{ !$menu->is_available ? 'disabled' : '' }}>
+                    data-id="{{ $menu->id_menu }}">
                     +
                 </button>
 
             </div>
         </div>
         @endforeach
-    </div>
-</div>
-
-<div class="price-summary mt-3 p-3 bg-light rounded small">
-    <div class="d-flex justify-content-between">
-        <span>Subtotal Area/Meja:</span>
-        <span id="summary-area-price">Rp 0</span>
-    </div>
-    <div class="d-flex justify-content-between">
-        <span>Subtotal Menu:</span>
-        <span id="summary-menu-price">Rp 0</span>
-    </div>
-    <hr class="my-2">
-    <div class="d-flex justify-content-between fw-bold">
-        <span>Estimasi Total:</span>
-        <span id="summary-total-price">Rp 0</span>
     </div>
 </div>
 
@@ -335,9 +329,11 @@ area.addEventListener('change', function(){
     if(hasMeja == "0"){
 
         mejaWrapper.style.display = "none";
+        document.getElementById('row-meja-price').style.display = 'none';
         meja.required = false;
         meja.value    = "";
 
+        calculateTotal();
         cek();
         return;
     }
@@ -359,13 +355,18 @@ area.addEventListener('change', function(){
 
     });
 
+    calculateTotal();
     cek();
 
 });
 
+meja.addEventListener('change', function(){
+    calculateTotal();
+    cek();
+});
 
 // ================= TRIGGER =================
-[jumlah,tanggal,jam,jamSelesai,area,meja]
+[jumlah,tanggal,jam,jamSelesai,area]
 .forEach(el => el.addEventListener('change',cek));
 
 jumlah.addEventListener('input', cek);
@@ -464,16 +465,10 @@ function fetchAvailability(idMeja){
 
 // ================= BTN =================
 function enableNext(){
-    let menuPrice = calculateTotal();
-    
-    if (menuPrice > 0) {
-        btnNext.disabled = false;
-        btnNext.classList.remove('btn-disabled');
-        btnNext.classList.add('btn-enabled');
-        notif.innerHTML = "";
-    } else {
-        disableNext("Pilih minimal satu menu");
-    }
+    btnNext.disabled = false;
+    btnNext.classList.remove('btn-disabled');
+    btnNext.classList.add('btn-enabled');
+    notif.innerHTML = "";
 }
 
 function disableNext(msg=""){
@@ -504,38 +499,27 @@ btnBack.onclick=function(){
 // ================= MENU QUANTITY =================
 document.querySelectorAll('.btn-plus').forEach(btn => {
     btn.addEventListener('click', function () {
-        if (this.disabled) return;
-
         let id = this.dataset.id;
         let input = document.getElementById('qty_' + id);
-
         input.value = parseInt(input.value) + 1;
-
-        calculateTotal();
-        cek();
     });
 });
 
 document.querySelectorAll('.btn-minus').forEach(btn => {
     btn.addEventListener('click', function () {
-        if (this.disabled) return;
-
         let id = this.dataset.id;
         let input = document.getElementById('qty_' + id);
-
         if (parseInt(input.value) > 0) {
             input.value = parseInt(input.value) - 1;
         }
-
-        calculateTotal();
-        cek();
     });
 });
 
+
+// ================= HITUNG TOTAL (AREA + MEJA SAJA) =================
 function calculateTotal() {
     let areaPrice = 0;
     let mejaPrice = 0;
-    let menuPrice = 0;
 
     let selectedArea = area.options[area.selectedIndex];
     if (selectedArea && selectedArea.value) {
@@ -547,20 +531,18 @@ function calculateTotal() {
         mejaPrice = parseFloat(selectedMeja.dataset.harga || 0);
     }
 
-    document.querySelectorAll('.menu-qty').forEach(input => {
-        let qty = parseInt(input.value);
-        let price = parseFloat(input.dataset.harga);
-        menuPrice += (qty * price);
-    });
+    let grandTotal = areaPrice + mejaPrice;
 
-    let totalAreaMeja = areaPrice + mejaPrice;
-    let grandTotal = totalAreaMeja + menuPrice;
-
-    document.getElementById('summary-area-price').innerHTML = 'Rp ' + new Intl.NumberFormat('id-ID').format(totalAreaMeja);
-    document.getElementById('summary-menu-price').innerHTML = 'Rp ' + new Intl.NumberFormat('id-ID').format(menuPrice);
+    document.getElementById('summary-area-price').innerHTML = 'Rp ' + new Intl.NumberFormat('id-ID').format(areaPrice);
+    document.getElementById('summary-meja-price').innerHTML = 'Rp ' + new Intl.NumberFormat('id-ID').format(mejaPrice);
     document.getElementById('summary-total-price').innerHTML = 'Rp ' + new Intl.NumberFormat('id-ID').format(grandTotal);
 
-    return menuPrice;
+    // Tampilkan baris harga meja hanya jika ada meja terpilih
+    if (mejaPrice > 0) {
+        document.getElementById('row-meja-price').style.display = 'flex';
+    } else {
+        document.getElementById('row-meja-price').style.display = 'none';
+    }
 }
 
 
@@ -637,7 +619,7 @@ const email      = document.getElementById('email');
 const hp         = document.getElementById('hp');
 const btnConfirm = document.getElementById('btnConfirm');
 const notifInfo  = document.getElementById('notifInfo');
-const catatan = document.getElementById('catatan');
+const catatan    = document.getElementById('catatan');
 
 
 // ================= AUTO BLOCK HURUF HP =================
@@ -692,22 +674,19 @@ function disableConfirm(msg=""){
 }
 
 
-// ================= HARD STOP SUBMIT =================
+// ================= SUBMIT RESERVASI =================
 btnConfirm.onclick=function(){
 
-    // ❌ STOP jika email salah
     if(!validEmail(email.value)){
         notifInfo.innerHTML="Format email tidak valid";
         return;
     }
 
-    // ❌ STOP jika HP kurang dari 10 digit
     if(hp.value.length < 10){
         notifInfo.innerHTML="Nomor HP tidak valid";
         return;
     }
 
-    // ❌ STOP jika kosong
     if(!nama.value || !email.value || !hp.value){
         notifInfo.innerHTML="Lengkapi data pelanggan";
         return;
@@ -716,6 +695,7 @@ btnConfirm.onclick=function(){
     if(!confirm("Yakin reservasi?"))
     return;
 
+    // Kumpulkan menu yang dipilih (opsional)
     let selectedMenus = [];
     document.querySelectorAll('.menu-qty').forEach(input => {
         let qty = parseInt(input.value);

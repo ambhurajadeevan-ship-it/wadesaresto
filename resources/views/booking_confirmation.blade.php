@@ -136,37 +136,42 @@
                             <strong>{{ $reservasi->area->nama_area ?? '-' }}</strong>
                         </div>
 
+                        @if($reservasi->meja)
                         <div class="confirm-row">
                             <span>Meja</span>
-                            <strong>{{ $reservasi->meja->kode_meja ?? '-' }}</strong>
+                            <strong>{{ $reservasi->meja->kode_meja }} ({{ $reservasi->meja->kapasitas }} Orang)</strong>
                         </div>
+                        @endif
 
                         <div class="confirm-row">
                             <span>Metode Pembayaran</span>
                             <strong>{{ $reservasi->metode_pembayaran ?? '-' }}</strong>
                         </div>
 
-                        @if($reservasi->kode_meja)
-                            <div class="confirm-row">
-                            <span>Meja</span>
-                            <strong>
-                            {{ $reservasi->meja->kode_meja }} ({{ $reservasi->meja->kapasitas }} Orang)
-                            </strong>
-                            </div>
-                        @endif
-
-                        <h6 class="mt-4 mb-2">Pesanan Menu:</h6>
-                        @foreach($reservasi->menus as $menu)
-                        <div class="confirm-row py-1 border-0">
-                            <span class="small">{{ $menu->nama_menu }} (x{{ $menu->pivot->jumlah }})</span>
-                            <strong class="small">Rp {{ number_format($menu->pivot->harga_saat_ini * $menu->pivot->jumlah, 0, ',', '.') }}</strong>
-                        </div>
-                        @endforeach
-
+                        {{-- BIAYA RESERVASI --}}
                         <div class="confirm-row mt-3 border-top pt-3">
-                            <span class="fw-bold text-dark">Grand Total</span>
+                            <span class="fw-bold text-dark">Biaya Reservasi</span>
                             <strong class="text-primary fs-5">Rp {{ number_format($reservasi->total_harga, 0, ',', '.') }}</strong>
                         </div>
+
+                        {{-- MENU PESANAN (hanya tampil, tidak masuk total) --}}
+                        @if($reservasi->menus->count() > 0)
+                        <div class="mt-4 p-3 bg-light rounded">
+                            <h6 class="fw-semibold mb-2">
+                                <i class="bi bi-list-ul"></i> Pesanan Menu
+                                <span class="badge bg-secondary ms-1" style="font-size:11px;">Bayar di Tempat</span>
+                            </h6>
+                            @foreach($reservasi->menus as $menu)
+                            <div class="d-flex justify-content-between py-1 border-bottom">
+                                <span class="small">{{ $menu->nama_menu }} (x{{ $menu->pivot->jumlah }})</span>
+                                <span class="small text-muted">Rp {{ number_format($menu->pivot->harga_saat_ini * $menu->pivot->jumlah, 0, ',', '.') }}</span>
+                            </div>
+                            @endforeach
+                            <div class="small text-muted mt-2">
+                                <i class="bi bi-info-circle"></i> Harga menu dibayar langsung di tempat saat kedatangan.
+                            </div>
+                        </div>
+                        @endif
 
                         @if($reservasi->catatan)
                             <div class="confirm-row flex-column align-items-start mt-3">
