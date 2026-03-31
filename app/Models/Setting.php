@@ -6,9 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Setting extends Model
 {
+    protected $table = 'pengaturan_pembayaran';
+
     protected $fillable = [
-        'nama_resto',
         'rekening',
-        'qris'
+        'qris',
     ];
 }
