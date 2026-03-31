@@ -25,7 +25,7 @@ class ReservasiController extends Controller
             $mejaByArea[$area->id_area] = $area->meja;
         }
 
-        $menus = \App\Models\Menu::all();
+        $menus = \App\Models\Menu::where('is_available', true)->get();
 
         return view('booking', compact(
             'today',
@@ -114,9 +114,9 @@ class ReservasiController extends Controller
             'id_area'          => 'required',
             'id_meja'          => 'nullable',
             'catatan'          => 'nullable|string',
-            'menus'            => 'required|array|min:1',
-            'menus.*.id_menu'  => 'required|exists:menu,id_menu',
-            'menus.*.jumlah'   => 'required|integer|min:1'
+            'menus'            => 'nullable|array',
+            'menus.*.id_menu'  => 'required_with:menus|exists:menu,id_menu',
+            'menus.*.jumlah'   => 'required_with:menus|integer|min:1'
         ]);
 
         DB::beginTransaction();
@@ -131,7 +131,6 @@ class ReservasiController extends Controller
 
             // ================= CEK MEJA SUDAH ADA =================
             if ($request->id_meja) {
-                // Gunakan lockForUpdate untuk mencegah race condition
                 $cek = Reservasi::where('id_meja',$request->id_meja)
                     ->where('tanggal_reservasi',$request->tanggal_reservasi)
                     ->where(function($q) use ($jam, $jamSelesai) {
@@ -154,7 +153,7 @@ class ReservasiController extends Controller
                     ]);
                 }
             } else {
-                // ================= CEK KAPASITAS AREA UNTUK AREA TANPA MEJA =================
+                // ================= CEK KAPASITAS AREA =================
                 $area = Area::findOrFail($request->id_area);
                 
                 $totalOrangTerpakai = Reservasi::where('id_area', $request->id_area)
@@ -181,7 +180,7 @@ class ReservasiController extends Controller
                 }
             }
 
-            // ================= HITUNG TOTAL HARGA =================
+            // ================= HITUNG TOTAL HARGA (AREA + MEJA SAJA) =================
             $totalHarga = 0;
             
             $area = \App\Models\Area::findOrFail($request->id_area);
@@ -192,20 +191,20 @@ class ReservasiController extends Controller
                 $totalHarga += $meja->harga;
             }
 
+            // ================= SIMPAN MENU (TANPA HARGA) =================
             $menuDetails = [];
-            foreach ($request->menus as $item) {
-                $menu = \App\Models\Menu::findOrFail($item['id_menu']);
-                $subtotal = $menu->harga * $item['jumlah'];
-                $totalHarga += $subtotal;
-                
-                $menuDetails[] = [
-                    'id_menu' => $menu->id_menu,
-                    'jumlah' => $item['jumlah'],
-                    'harga_saat_ini' => $menu->harga
-                ];
+            if ($request->menus && count($request->menus) > 0) {
+                foreach ($request->menus as $item) {
+                    $menu = \App\Models\Menu::findOrFail($item['id_menu']);
+                    $menuDetails[] = [
+                        'id_menu'       => $menu->id_menu,
+                        'jumlah'        => $item['jumlah'],
+                        'harga_saat_ini'=> $menu->harga // disimpan untuk referensi, tapi tidak masuk total
+                    ];
+                }
             }
 
-            // ================= SIMPAN =================
+            // ================= SIMPAN RESERVASI =================
             $reservasi = Reservasi::create([
                 'user_id'          => auth()->id(),
                 'nama_pelanggan'   => $request->nama_pelanggan,
@@ -218,13 +217,15 @@ class ReservasiController extends Controller
                 'id_area'          => $request->id_area,
                 'id_meja'          => $request->id_meja,
                 'catatan'          => $request->catatan,
-                'total_harga'      => $totalHarga,
+                'total_harga'      => $totalHarga, // hanya area + meja
                 'status_pembayaran'=> 'unpaid',
-                'status'           => 'confirmed' // Or pending until payment? User said: "Setelah... terpenuhi, langsung dilanjutkan ke halaman payment"
+                'status'           => 'confirmed'
             ]);
 
-            // Save menu items
-            $reservasi->menus()->attach($menuDetails);
+            // Simpan pilihan menu jika ada
+            if (!empty($menuDetails)) {
+                $reservasi->menus()->attach($menuDetails);
+            }
 
             DB::commit();
 
