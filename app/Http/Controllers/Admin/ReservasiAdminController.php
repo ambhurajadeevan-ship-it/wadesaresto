@@ -29,17 +29,25 @@ class ReservasiAdminController extends Controller
 
     public function getJson()
     {
-        $data = DB::table('reservasi')
-            ->leftJoin('area','reservasi.id_area','=','area.id_area')
-            ->leftJoin('meja','reservasi.id_meja','=','meja.id_meja')
-            ->select(
-                'reservasi.*',
-                'area.nama_area',
-                'meja.kode_meja'
-            )
-            ->orderBy('reservasi.created_at','desc')
+        // Eager load relasi menus (pivot: jumlah, harga_saat_ini)
+        $reservasi = Reservasi::with([
+                'area',
+                'meja',
+                'menus' => function($q) {
+                    $q->select('menu.id_menu','menu.nama_menu','menu.kategori','menu.harga')
+                      ->withPivot('jumlah','harga_saat_ini');
+                }
+            ])
+            ->orderBy('created_at','desc')
             ->get();
-        
+
+        // Tambahkan nama_area dan kode_meja langsung ke collection
+        $data = $reservasi->map(function ($r) {
+            $arr = $r->toArray();
+            $arr['nama_area'] = $r->area->nama_area ?? null;
+            $arr['kode_meja'] = $r->meja->kode_meja ?? null;
+            return $arr;
+        });
 
         $stats = [
             'total'     => Reservasi::count(),
@@ -54,7 +62,7 @@ class ReservasiAdminController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function updateStatus(Request $request, $id)
     {
         $request->validate([
             'status' => 'required|in:confirmed,cancelled'
@@ -73,47 +81,40 @@ class ReservasiAdminController extends Controller
                 ->send(new ReservasiMail($reservasi));
         }
 
-        return back()->with('success', 'Status reservasi berhasil diperbarui.');
+        return response()->json(['success' => true]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        return $this->updateStatus($request, $id);
     }
 
     public function destroy($id)
     {
-        $reservasi = \App\Models\Reservasi::findOrFail($id);
+        $reservasi = Reservasi::findOrFail($id);
         $reservasi->delete();
 
-        return redirect()->back()->with('success', 'Reservasi berhasil dihapus.');
+        return response()->json(['success' => true]);
     }
-
-    
 
     public function dashboard()
     {
         $totalReservasi = Reservasi::count();
+        $hariIni        = Reservasi::whereDate('tanggal_reservasi', today())->count();
+        $totalOrang     = Reservasi::sum('jumlah_orang');
+        $confirmed      = Reservasi::where('status','confirmed')->count();
+        $pending        = Reservasi::where('status','pending')->count();
+        $cancelled      = Reservasi::where('status','cancelled')->count();
 
-        $hariIni = Reservasi::whereDate('tanggal_reservasi', today())->count();
-
-        $totalOrang = Reservasi::sum('jumlah_orang');
-
-        $confirmed = Reservasi::where('status', 'confirmed')->count();
-        $pending = Reservasi::where('status', 'pending')->count();
-        $cancelled = Reservasi::where('status', 'cancelled')->count();
-
-        // Grafik 7 hari terakhir
         $chartData = Reservasi::selectRaw('DATE(tanggal_reservasi) as tanggal, COUNT(*) as total')
-            ->where('tanggal_reservasi', '>=', now()->subDays(7))
+            ->where('tanggal_reservasi','>=',now()->subDays(7))
             ->groupBy('tanggal')
             ->orderBy('tanggal')
             ->get();
 
         return view('admin.dashboard', compact(
-            'totalReservasi',
-            'hariIni',
-            'totalOrang',
-            'confirmed',
-            'pending',
-            'cancelled',
-            'chartData'
+            'totalReservasi','hariIni','totalOrang',
+            'confirmed','pending','cancelled','chartData'
         ));
     }
-
 }

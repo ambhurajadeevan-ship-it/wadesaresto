@@ -19,14 +19,6 @@
 </div>
 
 
-{{-- ALERT PENDING --}}
-@if($pending > 5)
-<div class="alert alert-warning">
-    Terdapat <strong>{{ $pending }}</strong> reservasi yang belum dikonfirmasi.
-</div>
-@endif
-
-
 
 {{-- STATISTIK UTAMA --}}
 <div class="row g-4 mb-4">
