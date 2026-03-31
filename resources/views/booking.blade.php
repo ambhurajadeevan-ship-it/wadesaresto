@@ -395,6 +395,17 @@ function cek(){
     // ================= AREA TANPA MEJA =================
     if(hasMeja == "0"){
 
+        // ================= VALIDASI MENU =================
+        let totalMenu = 0;
+        document.querySelectorAll('.menu-qty').forEach(input => {
+            totalMenu += parseInt(input.value || 0);
+        });
+
+        if(totalMenu <= 0){
+            disableNext("Pilih minimal 1 menu");
+            return;
+        }
+
         fetchAvailability(null);
         return;
     }
@@ -419,6 +430,17 @@ function cek(){
 
     if(parseInt(jumlah.value) < 1){
         disableNext("Jumlah orang minimal 1");
+        return;
+    }
+
+    // ================= VALIDASI MENU =================
+    let totalMenu = 0;
+    document.querySelectorAll('.menu-qty').forEach(input => {
+        totalMenu += parseInt(input.value || 0);
+    });
+
+    if(totalMenu <= 0){
+        disableNext("Pilih minimal 1 menu");
         return;
     }
 
@@ -502,6 +524,7 @@ document.querySelectorAll('.btn-plus').forEach(btn => {
         let id = this.dataset.id;
         let input = document.getElementById('qty_' + id);
         input.value = parseInt(input.value) + 1;
+        cek(); // ✅ TAMBAHKAN INI
     });
 });
 
@@ -512,6 +535,7 @@ document.querySelectorAll('.btn-minus').forEach(btn => {
         if (parseInt(input.value) > 0) {
             input.value = parseInt(input.value) - 1;
         }
+        cek(); // ✅ TAMBAHKAN INI
     });
 });
 

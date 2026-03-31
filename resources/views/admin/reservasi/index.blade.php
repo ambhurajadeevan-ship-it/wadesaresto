@@ -18,16 +18,6 @@
             </div>
         </div>
 
-        <div class="stat-card yellow">
-            <div class="stat-icon">
-                <i class="bi bi-hourglass-split"></i>
-            </div>
-            <div>
-                <h6>Pending</h6>
-                <h3 id="statPending">0</h3>
-            </div>
-        </div>
-
         <div class="stat-card green">
             <div class="stat-icon">
                 <i class="bi bi-check-circle"></i>
@@ -186,7 +176,7 @@
 ============================================================ */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
     margin-bottom: 24px;
 }
@@ -869,7 +859,20 @@ function renderTable(data) {
     }
 
     tbody.innerHTML = data.map(item => {
-        const statusClass = { confirmed: 'badge-confirmed', cancelled: 'badge-cancelled', pending: 'badge-pending' }[item.status] || 'badge-pending';
+        let statusLabel = '-';
+        let statusClass = 'badge-unpaid';
+
+        // SUDAH BAYAR
+        if(item.status === 'confirmed' && item.status_pembayaran === 'paid'){
+            statusLabel = 'Confirmed';
+            statusClass = 'badge-confirmed';
+        }
+
+        // CANCEL
+        else if(item.status === 'cancelled'){
+            statusLabel = 'Cancelled';
+            statusClass = 'badge-cancelled';
+        }
         const bayarClass  = { paid: 'badge-paid', failed: 'badge-failed', unpaid: 'badge-unpaid' }[item.status_pembayaran] || 'badge-unpaid';
         const bayarLabel  = { paid: 'Lunas', failed: 'Gagal', unpaid: 'Belum Bayar' }[item.status_pembayaran] || 'Belum Bayar';
 
@@ -905,10 +908,7 @@ function renderTable(data) {
 
         /* --- Action buttons --- */
         let actions = '';
-        if (item.status === 'pending') {
-            actions += `<button class="btn-confirm" title="Konfirmasi" onclick="updateStatus(${item.id_reservasi},'confirmed')"><i class="bi bi-check-lg"></i></button>`;
-            actions += `<button class="btn-cancel-action" title="Tolak" onclick="updateStatus(${item.id_reservasi},'cancelled')"><i class="bi bi-x-lg"></i></button>`;
-        }
+        
         actions += `<button class="btn-delete" title="Hapus" onclick="deleteReservasi(${item.id_reservasi})"><i class="bi bi-trash3"></i></button>`;
 
         return `
@@ -938,7 +938,7 @@ function renderTable(data) {
                 ${item.catatan ? `<button class="menu-more-btn" style="margin-top:4px" onclick="showCatatan('${item.catatan.replace(/'/g,"\\'")}')"><i class="bi bi-chat-left-text"></i> Catatan</button>` : ''}
             </td>
             <td>${pembayaranCol}</td>
-            <td><span class="badge ${statusClass}">${item.status.charAt(0).toUpperCase()+item.status.slice(1)}</span></td>
+            <td><span class="badge ${statusClass}">${statusLabel}</span></td>
             <td><div class="action-group">${actions}</div></td>
         </tr>`;
     }).join('');
