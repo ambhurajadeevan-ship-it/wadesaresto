@@ -25,9 +25,16 @@ class CustomerAuthController extends Controller
         if (Auth::guard('web')->attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
-            // Kembali ke halaman yang dituju sebelum login
-            // default ke /booking agar lebih relevan
-            return redirect()->intended('/booking');
+            // Ambil intended URL dari session secara manual,
+            // tapi TOLAK jika mengarah ke /admin/* untuk keamanan
+            $intended = session()->pull('url.intended');
+
+            if ($intended && !str_contains($intended, '/admin')) {
+                return redirect($intended);
+            }
+
+            // Default selalu ke /booking
+            return redirect('/booking');
         }
 
         return back()->withErrors([
