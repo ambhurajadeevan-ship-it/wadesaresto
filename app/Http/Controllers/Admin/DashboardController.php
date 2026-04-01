@@ -34,33 +34,33 @@ class DashboardController extends Controller
            QUERY DASAR BERDASARKAN FILTER
         ================================= */
 
-        $baseQuery = Reservasi::whereDate('tanggal_reservasi','>=',$startDate);
+        $baseQuery = Reservasi::whereDate('tanggal_reservasi', '>=', $startDate);
 
 
         /* ================================
-           STATISTIK UTAMA (SUDAH DINAMIS)
+           STATISTIK UTAMA
         ================================= */
 
         $totalReservasi = $baseQuery->count();
 
-        $totalMenu = Menu::count();
+        $totalMenu   = Menu::count();
         $totalGaleri = Galeri::count();
 
         $hariIni = Reservasi::whereDate('tanggal_reservasi', today())->count();
 
-        $totalOrang = Reservasi::whereDate('tanggal_reservasi','>=',$startDate)
+        $totalOrang = Reservasi::whereDate('tanggal_reservasi', '>=', $startDate)
                         ->sum('jumlah_orang');
 
-        $confirmed = Reservasi::whereDate('tanggal_reservasi','>=',$startDate)
-                        ->where('status','confirmed')
+        $confirmed = Reservasi::whereDate('tanggal_reservasi', '>=', $startDate)
+                        ->where('status', 'confirmed')
                         ->count();
 
-        $pending = Reservasi::whereDate('tanggal_reservasi','>=',$startDate)
-                        ->where('status','pending')
+        $pending = Reservasi::whereDate('tanggal_reservasi', '>=', $startDate)
+                        ->where('status', 'pending')
                         ->count();
 
-        $cancelled = Reservasi::whereDate('tanggal_reservasi','>=',$startDate)
-                        ->where('status','cancelled')
+        $cancelled = Reservasi::whereDate('tanggal_reservasi', '>=', $startDate)
+                        ->where('status', 'cancelled')
                         ->count();
 
 
@@ -71,7 +71,7 @@ class DashboardController extends Controller
         $totalStatus = $confirmed + $pending + $cancelled;
 
         $confirmedPercent = $totalStatus > 0 ? round(($confirmed / $totalStatus) * 100) : 0;
-        $pendingPercent = $totalStatus > 0 ? round(($pending / $totalStatus) * 100) : 0;
+        $pendingPercent   = $totalStatus > 0 ? round(($pending / $totalStatus) * 100) : 0;
         $cancelledPercent = $totalStatus > 0 ? round(($cancelled / $totalStatus) * 100) : 0;
 
 
@@ -80,7 +80,7 @@ class DashboardController extends Controller
         ================================= */
 
         $chartData = Reservasi::selectRaw("tanggal_reservasi as tanggal, COUNT(*) as total")
-            ->whereDate('tanggal_reservasi','>=',$startDate)
+            ->whereDate('tanggal_reservasi', '>=', $startDate)
             ->groupBy('tanggal_reservasi')
             ->orderBy('tanggal_reservasi')
             ->get();
@@ -106,10 +106,11 @@ class DashboardController extends Controller
 
 
         /* ================================
-           RESERVASI TERBARU (IKUT FILTER)
+           RESERVASI TERBARU
         ================================= */
 
-        $latest = Reservasi::whereDate('tanggal_reservasi','>=',$startDate)
+        $latest = Reservasi::with('user')
+                    ->whereDate('tanggal_reservasi', '>=', $startDate)
                     ->latest()
                     ->limit(5)
                     ->get();
@@ -120,7 +121,7 @@ class DashboardController extends Controller
         ================================= */
 
         $jamRamai = Reservasi::selectRaw("jam_reservasi as jam, COUNT(*) as total")
-            ->whereDate('tanggal_reservasi','>=',$startDate)
+            ->whereDate('tanggal_reservasi', '>=', $startDate)
             ->groupBy('jam_reservasi')
             ->orderByDesc('total')
             ->limit(5)
@@ -175,10 +176,14 @@ class DashboardController extends Controller
                     ->orWhere('kategori', 'like', "%{$keyword}%")
                     ->get();
 
-        $reservasis = Reservasi::where(function($query) use ($keyword) {
-                            $query->where('nama_pelanggan', 'like', "%{$keyword}%")
-                                ->orWhere('email', 'like', "%{$keyword}%")
-                                ->orWhere('status', 'like', "%{$keyword}%");
+        // Cari reservasi melalui relasi user (nama & email ada di tabel users)
+        $reservasis = Reservasi::with('user')
+                        ->where(function ($query) use ($keyword) {
+                            $query->where('status', 'like', "%{$keyword}%")
+                                  ->orWhereHas('user', function ($q) use ($keyword) {
+                                      $q->where('name', 'like', "%{$keyword}%")
+                                        ->orWhere('email', 'like', "%{$keyword}%");
+                                  });
                         })
                         ->get();
 
@@ -195,15 +200,19 @@ class DashboardController extends Controller
 
     public function latestReservasi()
     {
-        $latest = Reservasi::orderBy('created_at', 'desc')
+        $latest = Reservasi::with('user')
+            ->orderBy('created_at', 'desc')
             ->limit(5)
-            ->get([
-                'nama_pelanggan',
-                'tanggal_reservasi',
-                'email',
-                'jam_reservasi',
-                'status'
-            ]);
+            ->get()
+            ->map(function ($r) {
+                return [
+                    'nama_pelanggan'   => $r->user->name ?? '-',
+                    'tanggal_reservasi'=> $r->tanggal_reservasi,
+                    'email'            => $r->user->email ?? '-',
+                    'jam_reservasi'    => $r->jam_reservasi,
+                    'status'           => $r->status,
+                ];
+            });
 
         return response()->json($latest);
     }

@@ -29,6 +29,7 @@ class ReservasiMail extends Mailable
 
     public function build()
     {
+        // email diambil dari accessor $reservasi->email → $reservasi->user->email
         return $this->subject('Konfirmasi Reservasi - Wadesa Resto')
             ->view('emails.reservasi')
             ->with([

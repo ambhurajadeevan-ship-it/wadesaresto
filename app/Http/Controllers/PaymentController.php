@@ -12,8 +12,8 @@ class PaymentController extends Controller
 {
     public function index($id)
     {
-        $reservasi = Reservasi::with(['area', 'meja', 'menus'])->findOrFail($id);
-        $setting = Setting::first();
+        $reservasi = Reservasi::with(['user', 'area', 'meja', 'menus'])->findOrFail($id);
+        $setting   = Setting::first();
 
         if ($reservasi->status_pembayaran == 'paid') {
             return redirect()->route('booking.confirmation', $id);
@@ -26,31 +26,31 @@ class PaymentController extends Controller
     {
         $request->validate([
             'metode_pembayaran' => 'required|string|in:M-Banking,QRIS',
-            'bukti_pembayaran' => 'required|file|mimes:jpeg,jpg,png,pdf|max:2048'
+            'bukti_pembayaran'  => 'required|file|mimes:jpeg,jpg,png,pdf|max:2048'
         ]);
 
         $reservasi = Reservasi::findOrFail($id);
-        
+
         // Handle file upload
         $buktiPath = null;
         if ($request->hasFile('bukti_pembayaran')) {
-            $file = $request->file('bukti_pembayaran');
-            $fileName = $reservasi->kode_booking . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $file      = $request->file('bukti_pembayaran');
+            $fileName  = $reservasi->kode_booking . '_' . time() . '.' . $file->getClientOriginalExtension();
             $buktiPath = $file->storeAs('bukti_pembayaran', $fileName, 'public');
         }
-        
+
         $reservasi->update([
             'metode_pembayaran' => $request->metode_pembayaran,
-            'bukti_pembayaran' => $buktiPath,
+            'bukti_pembayaran'  => $buktiPath,
             'status_pembayaran' => 'paid'
         ]);
 
-        // Kirim Email setelah lunas
+        // email diambil dari accessor → $reservasi->user->email
         Mail::to($reservasi->email)->send(new ReservasiMail($reservasi));
 
         return response()->json([
-            'success' => true,
-            'message' => 'Pembayaran berhasil dikonfirmasi',
+            'success'  => true,
+            'message'  => 'Pembayaran berhasil dikonfirmasi',
             'redirect' => route('booking.confirmation', $id)
         ]);
     }

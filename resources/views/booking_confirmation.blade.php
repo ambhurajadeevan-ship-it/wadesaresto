@@ -13,31 +13,20 @@
                     <div class="reservation-header px-4 py-3">
                         <div class="d-flex justify-content-between align-items-center">
 
-                            {{-- LEFT --}}
                             <div class="d-flex align-items-center gap-3">
                                 <img src="{{ asset('images/logo.png') }}"
                                     width="60"
                                     height="60"
                                     style="object-fit:contain">
-
                                 <div>
-                                    <div class="reservation-name">
-                                        WADESA
-                                    </div>
-                                    <small class="text-muted">
-                                        Warung Kopi & Resto
-                                    </small>
+                                    <div class="reservation-name">WADESA</div>
+                                    <small class="text-muted">Warung Kopi & Resto</small>
                                 </div>
                             </div>
 
-                            {{-- RIGHT --}}
                             <div class="text-end booking-info">
-                                <div class="open-label">
-                                    OPEN DAILY
-                                </div>
-                                <div class="open-time">
-                                    07.00 AM - 20.00 PM
-                                </div>
+                                <div class="open-label">OPEN DAILY</div>
+                                <div class="open-time">07.00 AM - 20.00 PM</div>
                                 <div class="open-address">
                                     Batunya, Kec. Baturiti,<br>
                                     Kab. Tabanan, Bali 82191
@@ -86,26 +75,34 @@
                         </div>
 
                         <p class="mt-3 text-muted small">
-                            Informasi konfirmasi reservasi telah dikirim ke email anda <b>{{ $reservasi->email }}</b>.
+                            Informasi konfirmasi reservasi telah dikirim ke email
+                            {{-- email diambil dari user via accessor --}}
+                            <b>{{ $reservasi->user->email ?? $reservasi->email }}</b>.
                         </p>
                     </div>
 
                     {{-- DETAIL BOX --}}
                     <div class="confirmation-box">
-                        
+
                         <div class="confirm-row">
                             <span>Kode Booking</span>
                             <strong>{{ $reservasi->kode_booking }}</strong>
                         </div>
-                        
+
+                        {{-- Data pelanggan diambil dari relasi user --}}
                         <div class="confirm-row">
                             <span>Nama</span>
-                            <strong>{{ $reservasi->nama_pelanggan }}</strong>
+                            <strong>{{ $reservasi->user->name ?? '-' }}</strong>
                         </div>
 
                         <div class="confirm-row">
                             <span>Email</span>
-                            <strong>{{ $reservasi->email }}</strong>
+                            <strong>{{ $reservasi->user->email ?? '-' }}</strong>
+                        </div>
+
+                        <div class="confirm-row">
+                            <span>No HP</span>
+                            <strong>{{ $reservasi->user->no_hp ?? '-' }}</strong>
                         </div>
 
                         <div class="confirm-row">
@@ -120,8 +117,8 @@
                             <strong>
                                 {{ \Carbon\Carbon::parse($reservasi->jam_reservasi)->format('H:i') }}
                                 -
-                                {{ $reservasi->jam_selesai 
-                                    ? \Carbon\Carbon::parse($reservasi->jam_selesai)->format('H:i') 
+                                {{ $reservasi->jam_selesai
+                                    ? \Carbon\Carbon::parse($reservasi->jam_selesai)->format('H:i')
                                     : '-' }}
                             </strong>
                         </div>
@@ -154,7 +151,7 @@
                             <strong class="text-primary fs-5">Rp {{ number_format($reservasi->total_harga, 0, ',', '.') }}</strong>
                         </div>
 
-                        {{-- MENU PESANAN (hanya tampil, tidak masuk total) --}}
+                        {{-- MENU PESANAN --}}
                         @if($reservasi->menus->count() > 0)
                         <div class="mt-4 p-3 bg-light rounded">
                             <h6 class="fw-semibold mb-2">
@@ -189,7 +186,7 @@
                         <a href="/" class="btn-premium px-5">
                             Kembali ke Beranda
                         </a>
-                        
+
                         <form action="{{ route('reservasi.cancel.page', $reservasi->kode_booking) }}" method="POST"
                             onsubmit="return confirm('Yakin ingin membatalkan reservasi?')">
                             @csrf

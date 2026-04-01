@@ -42,7 +42,7 @@
             <div class="open-time text-center">
                 07.00 AM - 20.00 PM
             </div>
-            
+
             <div class="open-address text-center">
                 Batunya, Kec. Baturiti, <br>
                 Kab. Tabanan, Bali 82191
@@ -190,7 +190,7 @@
     </div>
 </div>
 
-{{-- PILIHAN MENU (Opsional, tanpa biaya) --}}
+{{-- PILIHAN MENU --}}
 <div class="menu-section mt-4">
     <div class="d-flex align-items-center gap-2 mb-1">
         <h6 class="mb-0 fw-bold">Pilih Menu</h6>
@@ -202,7 +202,6 @@
         @foreach($menus as $menu)
         <div class="d-flex align-items-center justify-content-between p-2 border-bottom">
 
-            <!-- INFO MENU -->
             <div class="small">
                 <div class="fw-bold">{{ $menu->nama_menu }}</div>
                 <div class="text-muted">
@@ -211,17 +210,14 @@
                 </div>
             </div>
 
-            <!-- CONTROL QTY -->
             <div class="d-flex align-items-center gap-2">
 
-                <!-- MINUS -->
                 <button type="button"
                     class="btn btn-sm btn-light btn-minus"
                     data-id="{{ $menu->id_menu }}">
                     -
                 </button>
 
-                <!-- QTY -->
                 <input type="number"
                     class="form-control form-control-sm text-center menu-qty"
                     id="qty_{{ $menu->id_menu }}"
@@ -230,7 +226,6 @@
                     readonly
                     style="width: 40px; border:none; background:transparent;">
 
-                <!-- PLUS -->
                 <button type="button"
                     class="btn btn-sm btn-light btn-plus"
                     data-id="{{ $menu->id_menu }}">
@@ -254,21 +249,26 @@ Next
 </div>
 
 {{-- ================= STEP 2 (INFO) ================= --}}
+{{-- Data pelanggan diambil dari akun yang login, tidak perlu input manual --}}
 <div id="step2" style="display:none">
 
-    <div class="form-floating-group mb-3">
-        <input type="text" id="nama" value="{{ Auth::user()->name }}" required>
-        <label>Nama Lengkap</label>
-    </div>
-
-    <div class="form-floating-group mb-3">
-        <input type="email" id="email" value="{{ Auth::user()->email }}" required>
-        <label>Email</label>
-    </div>
-
-    <div class="form-floating-group mb-3">
-        <input type="text" id="hp" value="{{ Auth::user()->no_hp }}" required>
-        <label>No HP</label>
+    {{-- Tampilkan data dari akun user yang sedang login --}}
+    <div class="p-3 mb-4 bg-light rounded border">
+        <h6 class="fw-semibold mb-3">
+            <i class="bi bi-person-circle me-1"></i> Data Pemesan
+        </h6>
+        <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted small">Nama</span>
+            <strong class="small">{{ Auth::user()->name }}</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted small">Email</span>
+            <strong class="small">{{ Auth::user()->email }}</strong>
+        </div>
+        <div class="d-flex justify-content-between">
+            <span class="text-muted small">No HP</span>
+            <strong class="small">{{ Auth::user()->no_hp ?? '-' }}</strong>
+        </div>
     </div>
 
     <div class="form-floating-group mb-4">
@@ -286,8 +286,7 @@ Next
         </button>
 
         <button id="btnConfirm"
-        class="btn-premium w-50 btn-disabled"
-        disabled>
+        class="btn-premium w-50 btn-enabled">
             Lanjut ke Pembayaran
         </button>
 
@@ -304,12 +303,12 @@ Next
 
 const mejaByArea = @json($mejaByArea);
 
-const jumlah  = document.getElementById('jumlah');
-const tanggal = document.getElementById('tanggal');
-const jam     = document.getElementById('jam');
+const jumlah     = document.getElementById('jumlah');
+const tanggal    = document.getElementById('tanggal');
+const jam        = document.getElementById('jam');
 const jamSelesai = document.getElementById('jam_selesai');
-const area    = document.getElementById('area');
-const meja    = document.getElementById('meja');
+const area       = document.getElementById('area');
+const meja       = document.getElementById('meja');
 
 const mejaWrapper = document.getElementById('mejaWrapper');
 const btnNext     = document.getElementById('btnNext');
@@ -325,7 +324,6 @@ area.addEventListener('change', function(){
 
     meja.innerHTML = `<option value=""></option>`;
 
-    // ❌ AREA TANPA MEJA
     if(hasMeja == "0"){
 
         mejaWrapper.style.display = "none";
@@ -338,14 +336,13 @@ area.addEventListener('change', function(){
         return;
     }
 
-    // ✅ AREA PUNYA MEJA
     mejaWrapper.style.display = "block";
     meja.required = true;
 
     mejaByArea[areaId].forEach(function(m){
 
         meja.innerHTML += `
-            <option 
+            <option
                 value="${m.id_meja}"
                 data-kapasitas="${m.kapasitas}"
                 data-harga="${m.harga}">
@@ -386,16 +383,13 @@ function cek(){
 
     let hasMeja = selectedArea.dataset.hasMeja;
 
-    // VALIDASI DASAR
     if(!jumlah.value || !tanggal.value || !jam.value || !jamSelesai.value || !area.value){
         disableNext("Lengkapi semua pilihan reservasi");
         return;
     }
 
-    // ================= AREA TANPA MEJA =================
     if(hasMeja == "0"){
 
-        // ================= VALIDASI MENU =================
         let totalMenu = 0;
         document.querySelectorAll('.menu-qty').forEach(input => {
             totalMenu += parseInt(input.value || 0);
@@ -410,19 +404,17 @@ function cek(){
         return;
     }
 
-    // ================= AREA PUNYA MEJA =================
     if(hasMeja == "1" && !meja.value){
         disableNext("Pilih meja terlebih dahulu");
         return;
     }
 
-    // ================= VALIDASI KAPASITAS MEJA =================
     let selectedMeja  = meja.options[meja.selectedIndex];
     let kapasitasMeja = parseInt(selectedMeja.dataset.kapasitas);
 
     if(parseInt(jumlah.value) > kapasitasMeja){
         disableNext(
-            "Jumlah orang melebihi kapasitas meja (" 
+            "Jumlah orang melebihi kapasitas meja ("
             + kapasitasMeja + " Orang)"
         );
         return;
@@ -433,7 +425,6 @@ function cek(){
         return;
     }
 
-    // ================= VALIDASI MENU =================
     let totalMenu = 0;
     document.querySelectorAll('.menu-qty').forEach(input => {
         totalMenu += parseInt(input.value || 0);
@@ -507,7 +498,6 @@ btnNext.onclick=function(){
     step2.style.display="block";
     nav1.classList.remove('active');
     nav2.classList.add('active');
-    cekStep2();
 }
 
 btnBack.onclick=function(){
@@ -524,7 +514,7 @@ document.querySelectorAll('.btn-plus').forEach(btn => {
         let id = this.dataset.id;
         let input = document.getElementById('qty_' + id);
         input.value = parseInt(input.value) + 1;
-        cek(); // ✅ TAMBAHKAN INI
+        cek();
     });
 });
 
@@ -535,12 +525,12 @@ document.querySelectorAll('.btn-minus').forEach(btn => {
         if (parseInt(input.value) > 0) {
             input.value = parseInt(input.value) - 1;
         }
-        cek(); // ✅ TAMBAHKAN INI
+        cek();
     });
 });
 
 
-// ================= HITUNG TOTAL (AREA + MEJA SAJA) =================
+// ================= HITUNG TOTAL =================
 function calculateTotal() {
     let areaPrice = 0;
     let mejaPrice = 0;
@@ -561,7 +551,6 @@ function calculateTotal() {
     document.getElementById('summary-meja-price').innerHTML = 'Rp ' + new Intl.NumberFormat('id-ID').format(mejaPrice);
     document.getElementById('summary-total-price').innerHTML = 'Rp ' + new Intl.NumberFormat('id-ID').format(grandTotal);
 
-    // Tampilkan baris harga meja hanya jika ada meja terpilih
     if (mejaPrice > 0) {
         document.getElementById('row-meja-price').style.display = 'flex';
     } else {
@@ -637,89 +626,19 @@ function filterJamHariIni(){
 
 }
 
-// ================= STEP 2 VALIDATION =================
-const nama       = document.getElementById('nama');
-const email      = document.getElementById('email');
-const hp         = document.getElementById('hp');
+const catatan    = document.getElementById('catatan');
 const btnConfirm = document.getElementById('btnConfirm');
 const notifInfo  = document.getElementById('notifInfo');
-const catatan    = document.getElementById('catatan');
-
-
-// ================= AUTO BLOCK HURUF HP =================
-hp.addEventListener('input', function(){
-    this.value = this.value.replace(/[^0-9]/g,'');
-    cekStep2();
-});
-
-[nama,email]
-.forEach(el=>el.addEventListener('input',cekStep2));
-
-
-// ================= EMAIL REGEX =================
-function validEmail(email){
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-
-// ================= VALIDASI STEP 2 =================
-function cekStep2(){
-
-    if(!nama.value || !email.value || !hp.value){
-        disableConfirm("Lengkapi data pelanggan");
-        return;
-    }
-
-    if(!validEmail(email.value)){
-        disableConfirm("Format email tidak valid");
-        return;
-    }
-
-    if(hp.value.length < 10){
-        disableConfirm("Nomor HP minimal 10 digit");
-        return;
-    }
-
-    enableConfirm();
-}
-
-function enableConfirm(){
-    btnConfirm.disabled=false;
-    btnConfirm.classList.remove('btn-disabled');
-    btnConfirm.classList.add('btn-enabled');
-    notifInfo.innerHTML="";
-}
-
-function disableConfirm(msg=""){
-    btnConfirm.disabled=true;
-    btnConfirm.classList.remove('btn-enabled');
-    btnConfirm.classList.add('btn-disabled');
-    notifInfo.innerHTML=msg;
-}
 
 
 // ================= SUBMIT RESERVASI =================
-btnConfirm.onclick=function(){
-
-    if(!validEmail(email.value)){
-        notifInfo.innerHTML="Format email tidak valid";
-        return;
-    }
-
-    if(hp.value.length < 10){
-        notifInfo.innerHTML="Nomor HP tidak valid";
-        return;
-    }
-
-    if(!nama.value || !email.value || !hp.value){
-        notifInfo.innerHTML="Lengkapi data pelanggan";
-        return;
-    }
+// Data pelanggan (nama, email, no_hp) tidak dikirim dari form
+// karena sudah disimpan di tabel users dan diambil via auth()->user()
+btnConfirm.onclick = function(){
 
     if(!confirm("Yakin reservasi?"))
     return;
 
-    // Kumpulkan menu yang dipilih (opsional)
     let selectedMenus = [];
     document.querySelectorAll('.menu-qty').forEach(input => {
         let qty = parseInt(input.value);
@@ -743,20 +662,15 @@ btnConfirm.onclick=function(){
             document.querySelector('meta[name="csrf-token"]').content
         },
 
-        body:JSON.stringify({
-
-            nama_pelanggan:nama.value,
-            email:email.value,
-            no_hp:hp.value,
-            tanggal_reservasi:tanggal.value,
-            jam_reservasi:jam.value,
-            jam_selesai:jamSelesai.value,
-            jumlah_orang:jumlah.value,
-            id_area:area.value,
-            id_meja:meja.value,
-            catatan:catatan.value,
-            menus: selectedMenus
-
+        body: JSON.stringify({
+            tanggal_reservasi : tanggal.value,
+            jam_reservasi     : jam.value,
+            jam_selesai       : jamSelesai.value,
+            jumlah_orang      : jumlah.value,
+            id_area           : area.value,
+            id_meja           : meja.value,
+            catatan           : catatan.value,
+            menus             : selectedMenus
         })
 
     })

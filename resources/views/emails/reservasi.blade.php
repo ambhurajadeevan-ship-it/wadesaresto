@@ -7,7 +7,8 @@
 
     <h2 style="color:#d4b16a;">Reservasi Berhasil Dibuat</h2>
 
-    <p>Halo {{ $reservasi->nama_pelanggan }}, <br><br>
+    {{-- nama_pelanggan diambil via accessor dari relasi user --}}
+    <p>Halo {{ $reservasi->user->name ?? $reservasi->nama_pelanggan }}, <br><br>
        Terima kasih telah melakukan reservasi di <b>Wadesa Resto</b>.
     </p>
 
@@ -27,7 +28,9 @@
 
     <p><b>Jumlah Orang:</b> {{ $reservasi->jumlah_orang }}</p>
 
-    <p><b>Email:</b> {{ $reservasi->email }}</p>
+    <p><b>Email:</b> {{ $reservasi->user->email ?? $reservasi->email }}</p>
+
+    <p><b>No HP:</b> {{ $reservasi->user->no_hp ?? $reservasi->no_hp }}</p>
 
     <p><b>Area:</b>
     {{ $reservasi->area->nama_area ?? '-' }}
