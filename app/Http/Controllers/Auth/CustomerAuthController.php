@@ -18,17 +18,20 @@ class CustomerAuthController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => 'required|email',
+            'email'    => 'required|email',
             'password' => 'required'
         ]);
 
-        if (Auth::guard('web')->attempt($credentials)) {
+        if (Auth::guard('web')->attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
-            return redirect()->intended('/');
+
+            // Kembali ke halaman yang dituju sebelum login
+            // default ke /booking agar lebih relevan
+            return redirect()->intended('/booking');
         }
 
         return back()->withErrors([
-            'email' => 'The provided credentials do not match our records.',
+            'email' => 'Email atau password salah.',
         ])->onlyInput('email');
     }
 
@@ -40,22 +43,23 @@ class CustomerAuthController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'no_hp' => 'required|numeric',
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|string|email|max:255|unique:users',
+            'no_hp'    => 'required|numeric',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'no_hp' => $request->no_hp,
+            'name'     => $request->name,
+            'email'    => $request->email,
+            'no_hp'    => $request->no_hp,
             'password' => Hash::make($request->password),
         ]);
 
         Auth::login($user);
 
-        return redirect('/');
+        // Setelah register langsung ke /booking
+        return redirect('/booking');
     }
 
     public function logout(Request $request)

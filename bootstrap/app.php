@@ -11,13 +11,17 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Redirect guest sesuai guard & route yang diakses
+        // Ini menangani kasus ketika middleware 'auth' dipakai tanpa guard spesifik
         $middleware->redirectGuestsTo(function (\Illuminate\Http\Request $request) {
-            // Jika akses route admin → redirect ke login admin
+
+            // Akses route admin → redirect ke login admin
             if ($request->is('admin/*')) {
                 return route('admin.login');
             }
 
             // Semua route lainnya (customer) → redirect ke login customer
+            // Laravel secara otomatis menyimpan intended URL ke session
             return route('login');
         });
     })

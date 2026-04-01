@@ -9,6 +9,7 @@ class Authenticate extends Middleware
 {
     protected function redirectTo(Request $request): ?string
     {
+        // Kalau request expecting JSON (AJAX), tidak perlu redirect
         if ($request->expectsJson()) {
             return null;
         }
@@ -19,6 +20,8 @@ class Authenticate extends Middleware
         }
 
         // Route customer → login customer
+        // Laravel akan menyimpan URL yang dituju ke session (intended URL)
+        // sehingga setelah login user kembali ke halaman yang diminta
         return route('login');
     }
 }

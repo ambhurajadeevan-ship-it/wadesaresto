@@ -297,7 +297,6 @@
             min-height: 50px;
         }
 
-        /* Loading */
         .availability-loading {
             background: #f5f5f5;
             padding: 12px 18px;
@@ -307,7 +306,6 @@
             border: 1px solid #eee;
         }
 
-        /* Available */
         .availability-success {
             background: rgba(31,61,54,0.08);
             border: 1px solid rgba(31,61,54,0.2);
@@ -319,7 +317,6 @@
             animation: fadeIn 0.3s ease;
         }
 
-        /* Full */
         .availability-full {
             background: rgba(200, 50, 50, 0.08);
             border: 1px solid rgba(200, 50, 50, 0.25);
@@ -399,46 +396,44 @@
             color: #333;
         }
 
-.form-floating-group select {
-    height: 55px;
-    padding-top: 20px;
-}
+        .form-floating-group select {
+            height: 55px;
+            padding-top: 20px;
+        }
 
-.btn-disabled{
-    background:#cfcfcf !important;
-    cursor:not-allowed !important;
-    opacity:0.6;
-    pointer-events:none;
-}
+        .btn-disabled{
+            background:#cfcfcf !important;
+            cursor:not-allowed !important;
+            opacity:0.6;
+            pointer-events:none;
+        }
 
-.btn-enabled{
-    background:#234d45 !important;
-    cursor:pointer !important;
-    opacity:1;
-    pointer-events:auto;
-}
+        .btn-enabled{
+            background:#234d45 !important;
+            cursor:pointer !important;
+            opacity:1;
+            pointer-events:auto;
+        }
 
-.input-icon{
-    position:absolute;
-    right:14px;
-    top:50%;
-    transform:translateY(-50%);
-    color:#999;
-    font-size:14px;
-}
+        .input-icon{
+            position:absolute;
+            right:14px;
+            top:50%;
+            transform:translateY(-50%);
+            color:#999;
+            font-size:14px;
+        }
 
-textarea{
-    min-height:80px;
-    resize:none;
-}
+        textarea{
+            min-height:80px;
+            resize:none;
+        }
 
-.btn-outline-secondary{
-    border-radius:40px;
-    height:48px;
-}
-
-
-</style>
+        .btn-outline-secondary{
+            border-radius:40px;
+            height:48px;
+        }
+    </style>
 </head>
 
 <body>
@@ -461,15 +456,25 @@ textarea{
                 <li class="nav-item"><a class="nav-link" href="/#menu">Menu</a></li>
                 <li class="nav-item"><a class="nav-link" href="/#gallery">Galeri</a></li>
                 <li class="nav-item"><a class="nav-link" href="/#location">Lokasi</a></li>
-                
+
                 @guest
-                    <li class="nav-item"><a class="nav-link" href="{{ route('login') }}">Login</a></li>
+                    {{-- Guest: tampilkan link Login --}}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('login') }}">Login</a>
+                    </li>
+                    {{--
+                        Tombol Reservasi untuk guest diarahkan ke /booking (bukan ke /login).
+                        Middleware auth:web akan otomatis redirect ke /login
+                        dan menyimpan /booking sebagai intended URL.
+                        Setelah login, user langsung diarahkan balik ke /booking.
+                    --}}
                     <li class="nav-item ms-3">
-                        <a href="{{ route('login') }}" class="btn btn-gold btn-sm">
+                        <a href="/booking" class="btn btn-gold btn-sm">
                             Reservasi
                         </a>
                     </li>
                 @else
+                    {{-- User sudah login --}}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             {{ Auth::user()->name }}
